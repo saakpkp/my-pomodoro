@@ -94,6 +94,11 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-bottom: 24px; /* BGM設定間のマージンを追加 */
+  padding: 16px;
+  background: linear-gradient(145deg, #fdfcfa 0%, #f8f5f0 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(212, 196, 176, 0.1);
 }
 
 .bgmSetting label {
@@ -196,6 +201,71 @@
   background: linear-gradient(145deg, #a8766a 0%, #884a3a 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(152, 90, 74, 0.3);
+}
+
+/* 音量コントロール */
+.volumeControl {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px;
+  background: linear-gradient(145deg, #f5f2ed 0%, #ede8e1 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(212, 196, 176, 0.15);
+}
+
+.volumeControl label {
+  font-weight: 500;
+  color: #8b755b;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.volumeSlider {
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(145deg, #d4c4b0 0%, #c4b4a0 100%);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(212, 196, 176, 0.2);
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(145deg, #8b755b 0%, #6b5b47 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(107, 91, 71, 0.3);
+  border: 2px solid #ffffff;
+  transition: all 0.2s ease;
+}
+
+.volumeSlider::-webkit-slider-thumb:hover {
+  background: linear-gradient(145deg, #7a6550 0%, #5a4b37 100%);
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(107, 91, 71, 0.4);
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(145deg, #8b755b 0%, #6b5b47 100%);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(107, 91, 71, 0.3);
+  border: 2px solid #ffffff;
+  transition: all 0.2s ease;
+}
+
+.volumeSlider::-moz-range-thumb:hover {
+  background: linear-gradient(145deg, #7a6550 0%, #5a4b37 100%);
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(107, 91, 71, 0.4);
 }
 
 /* タイマー表示 */
