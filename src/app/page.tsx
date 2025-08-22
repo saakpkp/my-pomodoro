@@ -9,11 +9,16 @@ export default function Home() {
   // タイマー設定
   const [workTime, setWorkTime] = useState(25); // 作業時間（分）
   const [breakTime, setBreakTime] = useState(5); // 休憩時間（分）
+  const [totalSets, setTotalSets] = useState(4); // 合計セット数（作業→休憩を1セットとする）
 
   // タイマー状態
   const [timerState, setTimerState] = useState<TimerState>("idle");
   const [timeLeft, setTimeLeft] = useState(0); // 残り時間（秒）
   const [totalTime, setTotalTime] = useState(0); // 合計時間（秒）
+  
+  // セット管理
+  const [currentSet, setCurrentSet] = useState(0); // 現在のセット数（0から開始）
+  const [isLastSet, setIsLastSet] = useState(false); // 最後のセットかどうか
 
   // BGM設定
   const [bgmUrl, setBgmUrl] = useState("");
@@ -450,6 +455,10 @@ export default function Home() {
     setTimeLeft(seconds);
     setTotalTime(seconds);
     setTimerState("work");
+    
+    // セット管理の初期化
+    setCurrentSet(1); // 1セット目から開始
+    setIsLastSet(totalSets === 1); // 1セットのみの場合は最後のセット
     // 作業時間にBGMを再生
     const preset = workBgmPresets.find((p) => p.id === selectedWorkBgm);
     if (preset && preset.url && selectedWorkBgm !== "silence") {
@@ -477,6 +486,9 @@ export default function Home() {
     setTimeLeft(seconds);
     setTotalTime(seconds);
     setTimerState("break");
+    
+    // 最後のセットかどうかをチェック
+    setIsLastSet(currentSet >= totalSets);
     // 休憩時間にBGMを再生
     const preset = bgmPresets.find((p) => p.id === selectedBgm);
     if (preset && preset.url.startsWith("generated_")) {
@@ -494,7 +506,38 @@ export default function Home() {
         setAudioError("音声ファイルの再生に失敗しました。");
       });
     }
-  }, [breakTime, bgmUrl, selectedBgm, bgmPresets]);
+  }, [breakTime, bgmUrl, selectedBgm, bgmPresets, currentSet, totalSets]);
+
+  // 次のセットに移る関数
+  const startNextSet = useCallback(() => {
+    const nextSetNumber = currentSet + 1;
+    setCurrentSet(nextSetNumber);
+    
+    // 次のセットの作業時間を開始
+    const actualWorkTime = workTime === 0 ? 25 : workTime;
+    const seconds = actualWorkTime * 60;
+    setTimeLeft(seconds);
+    setTotalTime(seconds);
+    setTimerState("work");
+    
+    console.log(`第${nextSetNumber}セット開始 (全${totalSets}セット)`);
+    
+    // 作業中BGMを再生
+    const preset = workBgmPresets.find((p) => p.id === selectedWorkBgm);
+    if (preset && preset.url && selectedWorkBgm !== "silence") {
+      if (preset.url.startsWith("generated_")) {
+        generateAmbientSound(preset.url).catch(error => {
+          console.error('作業中BGM再生エラー:', error);
+          setAudioError('作業中BGMの再生に失敗しました。');
+        });
+      } else {
+        playSeamlessAudio(preset.url, workBgmVolume).catch(error => {
+          console.error('作業中BGM再生エラー:', error);
+          setAudioError('作業中BGMの再生に失敗しました。');
+        });
+      }
+    }
+  }, [currentSet, totalSets, workTime, selectedWorkBgm, workBgmPresets, workBgmVolume]);
 
   const pauseTimer = () => {
     setTimerState("paused");
@@ -560,6 +603,11 @@ export default function Home() {
     setTimerState("idle");
     setTimeLeft(0);
     setTotalTime(0);
+    
+    // セット管理をリセット
+    setCurrentSet(0);
+    setIsLastSet(false);
+    
     // 通常音声を停止
     if (audioRef.current) {
       audioRef.current.pause();
@@ -580,15 +628,24 @@ export default function Home() {
               // 作業終了、休憩開始
               setTimeout(() => startBreakTimer(), 100);
             } else {
-              // 休憩終了、アイドル状態に戻る
-              setTimerState("idle");
-              // 通常音声を停止
-              if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current.currentTime = 0;
+              // 休憩終了
+              if (currentSet < totalSets) {
+                // まだセットが残っている場合は次のセットに移る
+                setTimeout(() => startNextSet(), 100);
+              } else {
+                // 全セット完了、アイドル状態に戻る
+                console.log(`全${totalSets}セット完了！お疲れ様でした！`);
+                setTimerState("idle");
+                setCurrentSet(0);
+                setIsLastSet(false);
+                // 通常音声を停止
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                  audioRef.current.currentTime = 0;
+                }
+                // 生成音声を停止
+                stopGeneratedSound();
               }
-              // 生成音声を停止
-              stopGeneratedSound();
             }
             return 0;
           }
@@ -607,7 +664,7 @@ export default function Home() {
         clearInterval(timerRef.current);
       }
     };
-  }, [timerState, startBreakTimer]);
+  }, [timerState, startBreakTimer, startNextSet, currentSet, totalSets]);
 
   // 時間を分:秒形式でフォーマット
   const formatTime = (seconds: number) => {
@@ -686,6 +743,35 @@ export default function Home() {
                   const value = parseInt(e.target.value);
                   if (isNaN(value) || value < 1 || value > 60) {
                     setBreakTime(5); // デフォルト値に戻す
+                  }
+                }}
+                disabled={timerState !== "idle"}
+                className={styles.timeInput}
+              />
+            </div>
+            <div className={styles.timeSetting}>
+              <label htmlFor="totalSets">セット数:</label>
+              <input
+                id="totalSets"
+                type="number"
+                min="1"
+                max="10"
+                value={totalSets === 0 ? "" : totalSets}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "") {
+                    setTotalSets(0);
+                  } else {
+                    const num = parseInt(value);
+                    if (!isNaN(num) && num >= 1 && num <= 10) {
+                      setTotalSets(num);
+                    }
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = parseInt(e.target.value);
+                  if (isNaN(value) || value < 1 || value > 10) {
+                    setTotalSets(4); // デフォルト値に戻す
                   }
                 }}
                 disabled={timerState !== "idle"}
@@ -863,10 +949,15 @@ export default function Home() {
         <div className={styles.timerDisplay}>
           <div className={styles.timerState}>
             {timerState === "idle" && "待機中"}
-            {timerState === "work" && "作業中"}
-            {timerState === "break" && "休憩中"}
+            {timerState === "work" && `作業中 (${currentSet}/${totalSets})`}
+            {timerState === "break" && `休憩中 (${currentSet}/${totalSets})`}
             {timerState === "paused" && "一時停止"}
           </div>
+          {timerState !== "idle" && (
+            <div className={styles.setProgress}>
+              セット {currentSet} / {totalSets}
+            </div>
+          )}
           <div className={styles.digitalClock}>{formatTime(timeLeft)}</div>
           {(timerState === "work" || timerState === "break") && (
             <div className={styles.progressBar}>
