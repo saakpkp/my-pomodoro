@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "start": "next dev -p 3007",
-    "dev": "next dev -p 3007",
-    "dev:open": "next dev -p 3007 & sleep 3 && open -a 'Google Chrome' http://localhost:3007",
+    "dev": "next dev -p 3007 & sleep 3 && open -a 'Google Chrome' http://localhost:3007",
     "build": "next build",
     "nstart": "next start",
     "lint": "next lint"

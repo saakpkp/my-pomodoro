@@ -14,7 +14,9 @@
       "mcp__serena__get_symbols_overview",
       "Bash(lsof:*)",
       "Bash(curl:*)",
-      "WebFetch(domain:www.hurtrecord.com)"
+      "WebFetch(domain:www.hurtrecord.com)",
+      "Bash(find:*)",
+      "Bash(awk:*)"
     ],
     "deny": []
   }

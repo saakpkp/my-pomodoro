@@ -22,7 +22,15 @@ export default function Home() {
 
   // BGM設定
   const [bgmUrl, setBgmUrl] = useState("");
-  const [selectedBgm, setSelectedBgm] = useState("waiting");
+  const [selectedBgm, setSelectedBgm] = useState(() => {
+    // ランダムなBGMを選択（無音以外から）
+    const musicPresets = [
+      "acoustic07", "acoustic13", "acoustic16", "acoustic26", "acoustic29",
+      "acoustic38", "acoustic41", "acoustic42", "acoustic50", "acoustic51"
+    ];
+    const randomIndex = Math.floor(Math.random() * musicPresets.length);
+    return musicPresets[randomIndex];
+  });
   const [selectedWorkBgm, setSelectedWorkBgm] = useState("white_noise"); // 作業中BGM
   const [workBgmVolume, setWorkBgmVolume] = useState(50); // 作業中BGM音量（0-100）
   const [breakBgmVolume, setBreakBgmVolume] = useState(50); // 休憩中BGM音量（0-100）
@@ -42,9 +50,54 @@ export default function Home() {
   const bgmPresets = useMemo(
     () => [
       {
-        id: "waiting",
-        name: "Waiting（休憩用）",
-        url: "/audio/break/waiting.mp3",
+        id: "acoustic07",
+        name: "Acoustic 07",
+        url: "/audio/break/maou_bgm_acoustic07.mp3",
+      },
+      {
+        id: "acoustic13",
+        name: "Acoustic 13",
+        url: "/audio/break/maou_bgm_acoustic13.mp3",
+      },
+      {
+        id: "acoustic16",
+        name: "Acoustic 16",
+        url: "/audio/break/maou_bgm_acoustic16.mp3",
+      },
+      {
+        id: "acoustic26",
+        name: "Acoustic 26",
+        url: "/audio/break/maou_bgm_acoustic26.mp3",
+      },
+      {
+        id: "acoustic29",
+        name: "Acoustic 29",
+        url: "/audio/break/maou_bgm_acoustic29.mp3",
+      },
+      {
+        id: "acoustic38",
+        name: "Acoustic 38",
+        url: "/audio/break/maou_bgm_acoustic38.mp3",
+      },
+      {
+        id: "acoustic41",
+        name: "Acoustic 41",
+        url: "/audio/break/maou_bgm_acoustic41.mp3",
+      },
+      {
+        id: "acoustic42",
+        name: "Acoustic 42",
+        url: "/audio/break/maou_bgm_acoustic42.mp3",
+      },
+      {
+        id: "acoustic50",
+        name: "Acoustic 50",
+        url: "/audio/break/maou_bgm_acoustic50.mp3",
+      },
+      {
+        id: "acoustic51",
+        name: "Acoustic 51",
+        url: "/audio/break/maou_bgm_acoustic51.mp3",
       },
       { id: "silence", name: "無音", url: "generated_silence" },
     ],
