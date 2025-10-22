@@ -18,7 +18,6 @@ export default function Home() {
 
   // セット管理
   const [currentSet, setCurrentSet] = useState(0); // 現在のセット数（0から開始）
-  const [isLastSet, setIsLastSet] = useState(false); // 最後のセットかどうか
 
   // BGM設定
   const [selectedBgm, setSelectedBgm] = useState(() => {
@@ -94,6 +93,11 @@ export default function Home() {
         name: "White Noise（作業用）",
         url: "/audio/work/white-niose.mp3",
       },
+      {
+        id: "brown_noise",
+        name: "Brown Noise（作業用）",
+        url: "/audio/work/soft-brown-noise-299934.mp3",
+      },
       { id: "silence", name: "無音", url: "generated_silence" },
     ],
     []
@@ -110,7 +114,6 @@ export default function Home() {
     // 新しい音声を設定
     audioRef.current.src = url;
     audioRef.current.volume = volume / 100; // 0-100を0-1に変換
-    audioRef.current.loop = true;
 
     // 再生
     audioRef.current
@@ -140,70 +143,65 @@ export default function Home() {
     }
   };
 
-  // 作業中BGMテストを停止
-  const stopWorkBgmTest = () => {
+  // BGMテストを停止（作業中・休憩中共通）
+  const stopBgmTest = (
+    setter: typeof setIsWorkBgmTestPlaying | typeof setIsBreakBgmTestPlaying
+  ) => {
     stopAudio();
-    setIsWorkBgmTestPlaying(false);
+    setter(false);
   };
 
-  // 休憩中BGMテストを停止
-  const stopBreakBgmTest = () => {
-    stopAudio();
-    setIsBreakBgmTestPlaying(false);
-  };
-
-  // 休憩時BGM選択ハンドラー
-  const handleBgmSelection = (presetId: string) => {
-    setSelectedBgm(presetId);
+  // BGM選択ハンドラー（休憩時・作業中共通）
+  const handleBgmSelection = (
+    presetId: string,
+    setter: typeof setSelectedBgm | typeof setSelectedWorkBgm
+  ) => {
+    setter(presetId);
     setAudioError("");
     stopAudio();
   };
 
-  // 作業中BGM選択ハンドラー
-  const handleWorkBgmSelection = (presetId: string) => {
-    setSelectedWorkBgm(presetId);
-    setAudioError("");
-    stopAudio();
-  };
+  // BGM再生ヘルパー関数
+  const playBgmIfNotSilence = useCallback(
+    (
+      presets: typeof bgmPresets | typeof workBgmPresets,
+      selectedId: string,
+      volume: number
+    ) => {
+      const preset = presets.find((p) => p.id === selectedId);
+      if (preset && preset.url && selectedId !== "silence") {
+        playAudio(preset.url, volume);
+      }
+    },
+    []
+  );
 
   // タイマー参照（バックグラウンド動作用）
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // タイマー開始関数
   const startWorkTimer = () => {
-    const actualWorkTime = workTime === 0 ? 25 : workTime; // 0の場合はデフォルト値を使用
-    const seconds = actualWorkTime * 60;
+    const seconds = (workTime || 25) * 60;
     setTimeLeft(seconds);
     setTotalTime(seconds);
     setTimerState("work");
 
     // セット管理の初期化
     setCurrentSet(1); // 1セット目から開始
-    setIsLastSet(totalSets === 1); // 1セットのみの場合は最後のセット
 
     // 作業時間にBGMを再生
-    const preset = workBgmPresets.find((p) => p.id === selectedWorkBgm);
-    if (preset && preset.url && selectedWorkBgm !== "silence") {
-      playAudio(preset.url, workBgmVolume);
-    }
+    playBgmIfNotSilence(workBgmPresets, selectedWorkBgm, workBgmVolume);
   };
 
   const startBreakTimer = useCallback(() => {
-    const actualBreakTime = breakTime === 0 ? 5 : breakTime; // 0の場合はデフォルト値を使用
-    const seconds = actualBreakTime * 60;
+    const seconds = (breakTime || 5) * 60;
     setTimeLeft(seconds);
     setTotalTime(seconds);
     setTimerState("break");
 
-    // 最後のセットかどうかをチェック
-    setIsLastSet(currentSet >= totalSets);
-
     // 休憩時間にBGMを再生
-    const preset = bgmPresets.find((p) => p.id === selectedBgm);
-    if (preset && preset.url && selectedBgm !== "silence") {
-      playAudio(preset.url, breakBgmVolume);
-    }
-  }, [breakTime, selectedBgm, bgmPresets, currentSet, totalSets, breakBgmVolume]);
+    playBgmIfNotSilence(bgmPresets, selectedBgm, breakBgmVolume);
+  }, [breakTime, selectedBgm, bgmPresets, breakBgmVolume, playBgmIfNotSilence]);
 
   // 次のセットに移る関数
   const startNextSet = useCallback(() => {
@@ -211,8 +209,7 @@ export default function Home() {
     setCurrentSet(nextSetNumber);
 
     // 次のセットの作業時間を開始
-    const actualWorkTime = workTime === 0 ? 25 : workTime;
-    const seconds = actualWorkTime * 60;
+    const seconds = (workTime || 25) * 60;
     setTimeLeft(seconds);
     setTotalTime(seconds);
     setTimerState("work");
@@ -220,11 +217,8 @@ export default function Home() {
     console.log(`第${nextSetNumber}セット開始 (全${totalSets}セット)`);
 
     // 作業中BGMを再生
-    const preset = workBgmPresets.find((p) => p.id === selectedWorkBgm);
-    if (preset && preset.url && selectedWorkBgm !== "silence") {
-      playAudio(preset.url, workBgmVolume);
-    }
-  }, [currentSet, totalSets, workTime, selectedWorkBgm, workBgmPresets, workBgmVolume]);
+    playBgmIfNotSilence(workBgmPresets, selectedWorkBgm, workBgmVolume);
+  }, [currentSet, totalSets, workTime, selectedWorkBgm, workBgmPresets, workBgmVolume, playBgmIfNotSilence]);
 
   const pauseTimer = () => {
     setTimerState("paused");
@@ -234,10 +228,9 @@ export default function Home() {
   const resumeTimer = () => {
     if (timeLeft > 0) {
       // 現在のtimerStateから一時停止前の状態を復元
-      const actualWorkTime = workTime === 0 ? 25 : workTime;
       const previousState =
         timerState === "paused"
-          ? totalTime === actualWorkTime * 60
+          ? totalTime === (workTime || 25) * 60
             ? "work"
             : "break"
           : "work";
@@ -245,18 +238,12 @@ export default function Home() {
 
       // 作業時間の場合は作業中BGMを再生
       if (previousState === "work") {
-        const preset = workBgmPresets.find((p) => p.id === selectedWorkBgm);
-        if (preset && preset.url && selectedWorkBgm !== "silence") {
-          playAudio(preset.url, workBgmVolume);
-        }
+        playBgmIfNotSilence(workBgmPresets, selectedWorkBgm, workBgmVolume);
       }
 
       // 休憩時間の場合は休憩BGMを再生
       if (previousState === "break") {
-        const preset = bgmPresets.find((p) => p.id === selectedBgm);
-        if (preset && preset.url && selectedBgm !== "silence") {
-          playAudio(preset.url, breakBgmVolume);
-        }
+        playBgmIfNotSilence(bgmPresets, selectedBgm, breakBgmVolume);
       }
     }
   };
@@ -268,7 +255,6 @@ export default function Home() {
 
     // セット管理をリセット
     setCurrentSet(0);
-    setIsLastSet(false);
 
     // 音声を停止
     stopAudio();
@@ -294,7 +280,6 @@ export default function Home() {
                 console.log(`全${totalSets}セット完了！お疲れ様でした！`);
                 setTimerState("idle");
                 setCurrentSet(0);
-                setIsLastSet(false);
                 // 音声を停止
                 stopAudio();
               }
@@ -500,7 +485,7 @@ export default function Home() {
             <select
               id="workBgmSelect"
               value={selectedWorkBgm}
-              onChange={(e) => handleWorkBgmSelection(e.target.value)}
+              onChange={(e) => handleBgmSelection(e.target.value, setSelectedWorkBgm)}
               className={styles.bgmSelect}
             >
               {workBgmPresets.map((preset) => (
@@ -538,7 +523,7 @@ export default function Home() {
                   <button
                     onClick={() => {
                       // 他のテストを停止
-                      stopBreakBgmTest();
+                      stopBgmTest(setIsBreakBgmTestPlaying);
 
                       const preset = workBgmPresets.find(
                         (p) => p.id === selectedWorkBgm
@@ -554,7 +539,7 @@ export default function Home() {
                   </button>
                 ) : (
                   <button
-                    onClick={stopWorkBgmTest}
+                    onClick={() => stopBgmTest(setIsWorkBgmTestPlaying)}
                     className={`${styles.testButton} ${styles.stopButton}`}
                   >
                     ⏹️ 停止
@@ -569,7 +554,7 @@ export default function Home() {
             <select
               id="bgmSelect"
               value={selectedBgm}
-              onChange={(e) => handleBgmSelection(e.target.value)}
+              onChange={(e) => handleBgmSelection(e.target.value, setSelectedBgm)}
               className={styles.bgmSelect}
             >
               {bgmPresets.map((preset) => (
@@ -611,7 +596,7 @@ export default function Home() {
                   <button
                     onClick={() => {
                       // 他のテストを停止
-                      stopWorkBgmTest();
+                      stopBgmTest(setIsWorkBgmTestPlaying);
 
                       const preset = bgmPresets.find(
                         (p) => p.id === selectedBgm
@@ -627,7 +612,7 @@ export default function Home() {
                   </button>
                 ) : (
                   <button
-                    onClick={stopBreakBgmTest}
+                    onClick={() => stopBgmTest(setIsBreakBgmTestPlaying)}
                     className={`${styles.testButton} ${styles.stopButton}`}
                   >
                     ⏹️ 停止
