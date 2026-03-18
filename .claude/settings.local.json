@@ -1,22 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "mcp__serena__check_onboarding_performed",
-      "mcp__serena__onboarding",
-      "mcp__serena__list_dir",
-      "mcp__serena__write_memory",
-      "mcp__serena__replace_symbol_body",
-      "mcp__serena__replace_regex",
       "Bash(npm run lint)",
       "Bash(npm run build:*)",
-      "mcp__serena__search_for_pattern",
       "Bash(npm run dev:*)",
-      "mcp__serena__get_symbols_overview",
       "Bash(lsof:*)",
       "Bash(curl:*)",
       "WebFetch(domain:www.hurtrecord.com)",
       "Bash(find:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(2)",
+      "Bash(npx skills:*)",
+      "Read(//Users/sakurayamada/.agents/skills/vercel-react-best-practices/**)",
+      "Read(//.agents/skills/**)"
     ],
     "deny": []
   }
